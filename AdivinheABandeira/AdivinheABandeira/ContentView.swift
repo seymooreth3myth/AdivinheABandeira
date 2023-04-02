@@ -12,10 +12,13 @@ struct ContentView: View {
     @State private var tituloResultado = ""
     @State private var resultado = 0
     @State private var tentativas = 0
+    @State private var animationAmount = 0.0
     
     @State private var paises = ["Estonia", "France", "Germany", "Ireland", "Italy", "Monaco", "Nigeria", "Poland", "Russia", "Spain", "UK", "USA"].shuffled()
     
     @State private var respostaCorreta = Int.random(in: 0...2)
+    @State private var selectedFlagIndex: Int?
+    @State private var touchedOpacity = false
     
     var body: some View {
         ZStack {
@@ -36,15 +39,31 @@ struct ContentView: View {
                                 .foregroundColor(.white)
                                 .font(.largeTitle.weight(.semibold))
                         }
-                        ForEach(0..<3) { number in
+                        ForEach(Array(paises.prefix(3).enumerated()), id: \.offset) { index, pais in
                             Button {
-                                tocouNaBandeira(number)
+                                touchedOpacity = true
+                                self.selectedFlagIndex = index
+                                withAnimation(.easeInOut) {
+                                    animationAmount += 360
+                                }
+                               
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    tocouNaBandeira(index)
+                                    self.selectedFlagIndex = nil
+                                    touchedOpacity = false
+                                }
+                                
                             } label: {
-                                Image(paises[number].lowercased())
+                                Image(pais.lowercased())
                                     .renderingMode(.original)
                                     .clipShape(Capsule())
                                     .shadow(radius: 5)
+                                   
+                                    .rotation3DEffect(
+                                        self.selectedFlagIndex == index ? .degrees(animationAmount) : .degrees(0), axis: (x: 0    , y: 1, z: 0))
+                                
                             }
+                            .opacity(touchedOpacity ? self.selectedFlagIndex == index ? 1.0 : 0.25 : 1.0)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -102,6 +121,7 @@ struct ContentView: View {
         }
     }
     func tocouNaBandeira(_ number: Int) {
+        
         tentativas = tentativas + 1
         if number == respostaCorreta {
             resultado += 1
